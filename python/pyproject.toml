@@ -53,12 +53,6 @@ dependencies = [
     "ulid-py>=1.1.0",
 ]
 
-[project.scripts]
-kolo = "kolo.__main__:cli"
-
-[project.entry-points."pytest11"]
-kolo = "kolo.pytest_plugin"
-
 [tool.maturin]
 
 features = ["pyo3/extension-module"]
