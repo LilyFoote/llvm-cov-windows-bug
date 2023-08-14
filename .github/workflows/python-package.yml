@@ -1,0 +1,128 @@
+name: Kolo Python Package  CI
+
+on:
+  push:
+    paths:
+      - .github/workflows/python-package.yml
+      - python/**
+  pull_request_target:
+    paths:
+      - .github/workflows/python-package.yml
+      - python/**
+
+jobs:
+  minimal:
+    if:
+      (github.actor != 'dependabot[bot]' && github.event_name == 'push') ||
+      (github.actor == 'dependabot[bot]' && github.event_name == 'pull_request_target')
+    runs-on: buildjet-2vcpu-ubuntu-2204
+    defaults:
+      run:
+        working-directory: ./python
+    steps:
+    - name: Checkout
+      if: ${{ github.event_name != 'pull_request_target' }}
+      uses: actions/checkout@v3
+
+    - name: Checkout PR
+      if: ${{ github.event_name == 'pull_request_target' }}
+      uses: actions/checkout@v3
+      with:
+        ref: ${{ github.event.pull_request.head.sha }}
+    - name: Install Rust toolchain
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        components: llvm-tools-preview
+
+    - uses: Swatinem/rust-cache@v2
+      with:
+        workspaces: python/rust
+
+    - name: Install cargo-llvm-cov
+      uses: taiki-e/install-action@cargo-llvm-cov
+
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3.8
+    - run: python -m venv .venv
+    - run: .venv/bin/pip install maturin
+    - run: .venv/bin/maturin develop --profile dev
+      env:
+        RUSTFLAGS: -C instrument-coverage -C llvm-args=--instrprof-atomic-counter-update-all --cfg=coverage --cfg=trybuild_no_target
+        CARGO_INCREMENTAL: 0
+        CARGO_LLVM_COV: 1
+    - run: .venv/bin/pip install pytest
+    - run: .venv/bin/pytest
+      env:
+        PYTHONFAULTHANDLER: 1
+        RUST_BACKTRACE: 1
+        LLVM_PROFILE_FILE: ${{ github.workspace }}/python/rust/target/rust-%p-%8m.profraw
+        CARGO_LLVM_COV_TARGET_DIR: ${{ github.workspace }}/python/rust/target
+    - run: cargo llvm-cov report --manifest-path=rust/Cargo.toml --codecov --output-path codecov.json
+      env:
+        LLVM_PROFILE_FILE: ${{ github.workspace }}/python/rust/target/rust-%p-%8m.profraw
+        CARGO_LLVM_COV_TARGET_DIR: ${{ github.workspace }}/python/rust/target
+    - name: codecov
+      uses: codecov/codecov-action@v3
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        flags: minimal
+        verbose: true
+
+  minimal-windows:
+    if:
+      (github.actor != 'dependabot[bot]' && github.event_name == 'push') ||
+      (github.actor == 'dependabot[bot]' && github.event_name == 'pull_request_target')
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: ./python
+    steps:
+    - name: Checkout
+      if: ${{ github.event_name != 'pull_request_target' }}
+      uses: actions/checkout@v3
+
+    - name: Checkout PR
+      if: ${{ github.event_name == 'pull_request_target' }}
+      uses: actions/checkout@v3
+      with:
+        ref: ${{ github.event.pull_request.head.sha }}
+    - name: Install Rust toolchain
+      uses: dtolnay/rust-toolchain@stable
+
+    - uses: Swatinem/rust-cache@v2
+      with:
+        workspaces: python/rust
+
+    - name: Install cargo-llvm-cov
+      uses: taiki-e/install-action@cargo-llvm-cov
+
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3.8
+    - run: python -m venv .venv
+    - run: .venv/Scripts/pip install maturin
+    - run: .venv/Scripts/maturin develop --profile dev
+      env:
+        RUSTFLAGS: -C instrument-coverage -C llvm-args=--instrprof-atomic-counter-update-all --cfg=coverage --cfg=trybuild_no_target
+        CARGO_INCREMENTAL: 0
+        CARGO_LLVM_COV: 1
+    - run: .venv/Scripts/pip install pytest
+    - run: .venv/Scripts/pytest
+      env:
+        PYTHONFAULTHANDLER: 1
+        RUST_BACKTRACE: 1
+        LLVM_PROFILE_FILE: ${{ github.workspace }}\python\rust\target\rust-%p-%8m.profraw
+        CARGO_LLVM_COV_TARGET_DIR: ${{ github.workspace }}\python\rust\target
+    - run: dir rust\target
+    - run: cargo llvm-cov report --manifest-path=rust\Cargo.toml --codecov --output-path codecov.json -vvv
+      if: ${{ !contains( matrix.python, 'pypy') }}
+      env:
+        LLVM_PROFILE_FILE: ${{ github.workspace }}\python\rust\target\rust-%p-%8m.profraw
+        CARGO_LLVM_COV_TARGET_DIR: ${{ github.workspace }}\python\rust\target
+    - name: codecov
+      uses: codecov/codecov-action@v3
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        flags: minimal,windows
+        verbose: true
