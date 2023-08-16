@@ -46,22 +46,21 @@ jobs:
         python-version: 3.8
     - run: python -m venv .venv
     - run: .venv/bin/pip install maturin
-    - run: .venv/bin/maturin develop --profile dev
+    - run: |
+        source <(cargo llvm-cov show-env --export-prefix)
+        .venv/bin/maturin develop --profile dev
       env:
         RUSTFLAGS: -C instrument-coverage -C llvm-args=--instrprof-atomic-counter-update-all --cfg=coverage --cfg=trybuild_no_target
-        CARGO_INCREMENTAL: 0
-        CARGO_LLVM_COV: 1
     - run: .venv/bin/pip install pytest
-    - run: .venv/bin/pytest
+    - run: |
+        source <(cargo llvm-cov show-env --export-prefix)
+        .venv/bin/pytest
       env:
         PYTHONFAULTHANDLER: 1
         RUST_BACKTRACE: 1
-        LLVM_PROFILE_FILE: ${{ github.workspace }}/python/rust/target/rust-%p-%8m.profraw
-        CARGO_LLVM_COV_TARGET_DIR: ${{ github.workspace }}/python/rust/target
-    - run: cargo llvm-cov report --manifest-path=rust/Cargo.toml --codecov --output-path codecov.json
-      env:
-        LLVM_PROFILE_FILE: ${{ github.workspace }}/python/rust/target/rust-%p-%8m.profraw
-        CARGO_LLVM_COV_TARGET_DIR: ${{ github.workspace }}/python/rust/target
+    - run: |
+        source <(cargo llvm-cov show-env --export-prefix)
+        cargo llvm-cov report --manifest-path=rust/Cargo.toml --codecov --output-path codecov.json
     - name: codecov
       uses: codecov/codecov-action@v3
       with:
@@ -102,24 +101,23 @@ jobs:
         python-version: 3.8
     - run: python -m venv .venv
     - run: .venv/Scripts/pip install maturin
-    - run: .venv/Scripts/maturin develop --profile dev
+    - run: |
+        source <(cargo llvm-cov show-env --export-prefix)
+        .venv/Scripts/maturin develop --profile dev
       env:
         RUSTFLAGS: -C instrument-coverage -C llvm-args=--instrprof-atomic-counter-update-all --cfg=coverage --cfg=trybuild_no_target
-        CARGO_INCREMENTAL: 0
-        CARGO_LLVM_COV: 1
     - run: .venv/Scripts/pip install pytest
-    - run: .venv/Scripts/pytest
+    - run: |
+        source <(cargo llvm-cov show-env --export-prefix)
+        .venv/Scripts/pytest
       env:
         PYTHONFAULTHANDLER: 1
         RUST_BACKTRACE: 1
-        LLVM_PROFILE_FILE: ${{ github.workspace }}\python\rust\target\rust-%p-%8m.profraw
-        CARGO_LLVM_COV_TARGET_DIR: ${{ github.workspace }}\python\rust\target
     - run: dir rust\target
-    - run: cargo llvm-cov report --manifest-path=rust\Cargo.toml --codecov --output-path codecov.json -vvv
+    - run: |
+        source <(cargo llvm-cov show-env --export-prefix)
+        cargo llvm-cov report --manifest-path=rust\Cargo.toml --codecov --output-path codecov.json -vvv
       if: ${{ !contains( matrix.python, 'pypy') }}
-      env:
-        LLVM_PROFILE_FILE: ${{ github.workspace }}\python\rust\target\rust-%p-%8m.profraw
-        CARGO_LLVM_COV_TARGET_DIR: ${{ github.workspace }}\python\rust\target
     - name: codecov
       uses: codecov/codecov-action@v3
       with:
