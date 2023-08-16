@@ -47,19 +47,19 @@ jobs:
     - run: python -m venv .venv
     - run: .venv/bin/pip install maturin
     - run: |
-        source <(cargo llvm-cov show-env --export-prefix)
+        source <(cargo llvm-cov show-env --export-prefix --manifest-path=rust/Cargo.toml)
         .venv/bin/maturin develop --profile dev
       env:
         RUSTFLAGS: -C instrument-coverage -C llvm-args=--instrprof-atomic-counter-update-all --cfg=coverage --cfg=trybuild_no_target
     - run: .venv/bin/pip install pytest
     - run: |
-        source <(cargo llvm-cov show-env --export-prefix)
+        source <(cargo llvm-cov show-env --export-prefix --manifest-path=rust/Cargo.toml)
         .venv/bin/pytest
       env:
         PYTHONFAULTHANDLER: 1
         RUST_BACKTRACE: 1
     - run: |
-        source <(cargo llvm-cov show-env --export-prefix)
+        source <(cargo llvm-cov show-env --export-prefix --manifest-path=rust/Cargo.toml)
         cargo llvm-cov report --manifest-path=rust/Cargo.toml --codecov --output-path codecov.json
     - name: codecov
       uses: codecov/codecov-action@v3
@@ -102,20 +102,20 @@ jobs:
     - run: python -m venv .venv
     - run: .venv/Scripts/pip install maturin
     - run: |
-        source <(cargo llvm-cov show-env --export-prefix)
+        source <(cargo llvm-cov show-env --export-prefix --manifest-path=rust\Cargo.toml)
         .venv/Scripts/maturin develop --profile dev
       env:
         RUSTFLAGS: -C instrument-coverage -C llvm-args=--instrprof-atomic-counter-update-all --cfg=coverage --cfg=trybuild_no_target
     - run: .venv/Scripts/pip install pytest
     - run: |
-        source <(cargo llvm-cov show-env --export-prefix)
+        source <(cargo llvm-cov show-env --export-prefix --manifest-path=rust\Cargo.toml)
         .venv/Scripts/pytest
       env:
         PYTHONFAULTHANDLER: 1
         RUST_BACKTRACE: 1
     - run: dir rust\target
     - run: |
-        source <(cargo llvm-cov show-env --export-prefix)
+        source <(cargo llvm-cov show-env --export-prefix --manifest-path=rust\Cargo.toml)
         cargo llvm-cov report --manifest-path=rust\Cargo.toml --codecov --output-path codecov.json -vvv
       if: ${{ !contains( matrix.python, 'pypy') }}
     - name: codecov
