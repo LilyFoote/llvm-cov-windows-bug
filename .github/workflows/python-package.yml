@@ -104,12 +104,14 @@ jobs:
     - run: |
         source <(cargo llvm-cov show-env --export-prefix --manifest-path=rust\Cargo.toml)
         .venv/Scripts/maturin develop --profile dev
+      shell: bash
       env:
         RUSTFLAGS: -C instrument-coverage -C llvm-args=--instrprof-atomic-counter-update-all --cfg=coverage --cfg=trybuild_no_target
     - run: .venv/Scripts/pip install pytest
     - run: |
         source <(cargo llvm-cov show-env --export-prefix --manifest-path=rust\Cargo.toml)
         .venv/Scripts/pytest
+      shell: bash
       env:
         PYTHONFAULTHANDLER: 1
         RUST_BACKTRACE: 1
@@ -117,6 +119,7 @@ jobs:
     - run: |
         source <(cargo llvm-cov show-env --export-prefix --manifest-path=rust\Cargo.toml)
         cargo llvm-cov report --manifest-path=rust\Cargo.toml --codecov --output-path codecov.json -vvv
+      shell: bash
       if: ${{ !contains( matrix.python, 'pypy') }}
     - name: codecov
       uses: codecov/codecov-action@v3
